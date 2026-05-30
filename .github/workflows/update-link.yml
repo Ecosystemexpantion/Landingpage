@@ -1,0 +1,25 @@
+name: Update WhatsApp Link
+on:
+  workflow_dispatch:
+    inputs:
+      waLink:
+        description: 'New WhatsApp Group Link'
+        required: true
+        type: string
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update data.json
+        run: echo '{"waLink":"${{ github.event.inputs.waLink }}"}' > data.json
+      - name: Commit and push
+        run: |
+          git config user.email "action@github.com"
+          git config user.name "GitHub Action"
+          git add data.json
+          git diff --staged --quiet || git commit -m "Update WhatsApp link"
+          git push
