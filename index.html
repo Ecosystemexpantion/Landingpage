@@ -280,13 +280,25 @@ footer{background:#000;text-align:center;padding:18px;font-size:.7rem;color:#333
     </div>
     <div id="main-admin">
       <h3>Update Link</h3>
-      <p>Paste your new link. Updates <strong style="color:var(--green)">ALL devices</strong> in ~1 min.</p>
+
+      <!-- Shown only on first-time setup -->
+      <div id="token-setup">
+        <p style="margin-bottom:16px;line-height:1.6">One-time setup needed. Tap the button below, copy the token you get, paste it here — you'll never see this again.</p>
+        <a href="https://github.com/settings/tokens/new?scopes=public_repo&description=EEM26+Admin" target="_blank" style="display:block;text-align:center;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;font-weight:900;font-size:.9rem;padding:13px;border-radius:6px;text-decoration:none;margin-bottom:14px">Step 1 — Get Your Token →</a>
+        <label>Step 2 — Paste Token Here</label>
+        <input type="password" id="gh-token-input" placeholder="ghp_...">
+      </div>
+
+      <!-- Shown after token is saved -->
+      <p id="token-ready" style="display:none;color:var(--green);font-size:.82rem;font-weight:700;margin-bottom:14px">✓ Token saved — just paste your new link below.</p>
+
       <label>New Group Link</label>
       <input type="url" id="wa-input" placeholder="https://chat.whatsapp.com/...">
-      <label>GitHub Token <span style="color:var(--muted);font-weight:400;letter-spacing:0">(saved on this device)</span></label>
-      <input type="password" id="gh-token-input" placeholder="ghp_...">
       <button class="admin-save" onclick="saveLink()">✓ Save & Update For Everyone</button>
       <button class="admin-close" onclick="closeAdmin()">Close</button>
+      <div style="text-align:center;margin-top:6px">
+        <button onclick="resetToken()" style="background:none;border:none;color:#444;font-size:.7rem;cursor:pointer;font-family:inherit">reset token</button>
+      </div>
       <div class="admin-status" id="save-status"></div>
     </div>
   </div>
@@ -697,13 +709,26 @@ function checkPwd(){
     document.getElementById("pwd-screen").style.display = "none";
     document.getElementById("main-admin").style.display = "flex";
     const saved = localStorage.getItem(LS_TOKEN);
-    if(saved) document.getElementById("gh-token-input").value = saved;
+    if(saved){
+      document.getElementById("token-setup").style.display  = "none";
+      document.getElementById("token-ready").style.display  = "block";
+    } else {
+      document.getElementById("token-setup").style.display  = "block";
+      document.getElementById("token-ready").style.display  = "none";
+    }
     getLink().then(l => { document.getElementById("wa-input").value = l; });
     setTimeout(()=>document.getElementById("wa-input").focus(),100);
   } else {
     document.getElementById("pwd-status").textContent = "❌ Incorrect password";
     document.getElementById("pwd-status").style.color = "#ff4444";
   }
+}
+
+function resetToken(){
+  localStorage.removeItem(LS_TOKEN);
+  document.getElementById("token-setup").style.display = "block";
+  document.getElementById("token-ready").style.display = "none";
+  document.getElementById("gh-token-input").value = "";
 }
 
 async function saveLink(){
