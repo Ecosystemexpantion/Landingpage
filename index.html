@@ -821,10 +821,10 @@ document.getElementById('om-cta').addEventListener('click', clearOfferTimers);
 document.querySelectorAll('.wa-link').forEach(el=>{
   el.addEventListener('click',function(e){
     e.preventDefault();
-    try{
+    if(typeof fbq==='function'){
       fbq('track','Lead');
       fbq('track','Purchase',{value:0,currency:'NGN'});
-    }catch(err){}
+    }
     openOfferModal(this.href);
   });
 });
