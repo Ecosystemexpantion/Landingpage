@@ -863,15 +863,13 @@ function clearOfferTimers(){
 // Manual click on the popup CTA — let target=_blank navigate, just stop the auto-timer
 document.getElementById('om-cta').addEventListener('click', clearOfferTimers);
 
-// Intercept every WhatsApp button click — fire pixel, then show offer
+// Fire pixel on WhatsApp button click, then go directly to group
 document.querySelectorAll('.wa-link').forEach(el=>{
-  el.addEventListener('click',function(e){
-    e.preventDefault();
+  el.addEventListener('click',function(){
     if(typeof fbq==='function'){
       fbq('track','Lead');
       fbq('track','Purchase',{value:0,currency:'NGN'});
     }
-    openOfferModal(this.href);
   });
 });
 
