@@ -304,18 +304,12 @@ footer{background:rgba(0,0,0,0.5);backdrop-filter:blur(20px);border-top:1px soli
     </div>
     <div id="main-admin">
       <h3>Update Link</h3>
-      <div id="token-setup">
-        <p>One-time setup: paste your GitHub token to enable cloud saves.</p>
-        <label>GitHub Token</label>
-        <input type="password" id="token-input" placeholder="ghp_...">
-        <button class="admin-save" onclick="saveToken()">Save Token</button>
-      </div>
-      <div id="token-ready" style="display:none">
+      <div id="token-setup" style="display:none"></div>
+      <div id="token-ready">
         <p>Paste your new link. Updates <strong style="color:var(--green)">ALL devices</strong> instantly.</p>
         <label>New Group Link</label>
         <input type="url" id="wa-input" placeholder="https://...">
         <button class="admin-save" onclick="saveLink()">✓ Save & Update For Everyone</button>
-        <button style="background:none;border:none;color:#7A7A9A;font-size:.75rem;cursor:pointer;margin-top:4px" onclick="resetToken()">Reset token</button>
       </div>
       <button class="admin-close" onclick="closeAdmin()">Close</button>
       <div class="admin-status" id="save-status"></div>
@@ -676,18 +670,17 @@ footer{background:rgba(0,0,0,0.5);backdrop-filter:blur(20px);border-top:1px soli
 // ── CONFIG ──
 const DEFAULT_LINK = "https://chat.whatsapp.com/Bgzw3Ugj3OIGkYUb7NxDDg";
 const ADMIN_PWD    = "sdda2025";
-const LS_LINK      = "eem26_wa_link";
-const LS_TOKEN     = "eem26_gh_token";
-const GH_REPO      = "Ecosystemexpantion/Landingpage";
-const DATA_FILE    = "data.json";
-const GH_DATA_URL  = "https://raw.githubusercontent.com/Ecosystemexpantion/Landingpage/main/data.json";
+const SB_URL       = "https://leqizarzgfpiriknpnxw.supabase.co";
+const SB_KEY       = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxlcWl6YXJ6Z2ZwaXJpa25wbnh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAxNzgxNTcsImV4cCI6MjA5NTc1NDE1N30.LNSMP3LXJv_QKE9COMmm9OS5axVGqw_60m750c6bBeg";
 
-// ── FETCH LINK FROM GITHUB OR FALLBACK ──
+// ── FETCH LINK FROM SUPABASE OR FALLBACK ──
 async function getLink(){
   try {
-    const res = await fetch(GH_DATA_URL + "?t=" + Date.now());
-    const data = await res.json();
-    if(data.waLink){ localStorage.setItem(LS_LINK, data.waLink); return data.waLink; }
+    const res = await fetch(`${SB_URL}/rest/v1/config?key=eq.wa_link&select=value`,{
+      headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY}
+    });
+    const rows = await res.json();
+    if(rows && rows[0] && rows[0].value) return rows[0].value;
   } catch(e){}
   return DEFAULT_LINK;
 }
@@ -722,72 +715,32 @@ function checkPwd(){
   if(val === ADMIN_PWD){
     document.getElementById("pwd-screen").style.display = "none";
     document.getElementById("main-admin").style.display = "flex";
-    const tok = localStorage.getItem(LS_TOKEN);
-    if(tok){
-      document.getElementById("token-setup").style.display = "none";
-      document.getElementById("token-ready").style.display = "block";
-      getLink().then(l => { document.getElementById("wa-input").value = l; });
-      setTimeout(()=>document.getElementById("wa-input").focus(),100);
-    } else {
-      document.getElementById("token-setup").style.display = "block";
-      document.getElementById("token-ready").style.display = "none";
-      setTimeout(()=>document.getElementById("token-input").focus(),100);
-    }
+    document.getElementById("token-setup").style.display = "none";
+    document.getElementById("token-ready").style.display = "block";
+    getLink().then(l => { document.getElementById("wa-input").value = l; });
+    setTimeout(()=>document.getElementById("wa-input").focus(),100);
   } else {
     document.getElementById("pwd-status").textContent = "❌ Incorrect password";
     document.getElementById("pwd-status").style.color = "#ff4444";
   }
 }
 
-function saveToken(){
-  const tok = document.getElementById("token-input").value.trim();
-  if(!tok){ return; }
-  localStorage.setItem(LS_TOKEN, tok);
-  document.getElementById("token-setup").style.display = "none";
-  document.getElementById("token-ready").style.display = "block";
-  document.getElementById("save-status").textContent = "✓ Token saved — just paste your new link below.";
-  document.getElementById("save-status").style.color = "#22C55E";
-  getLink().then(l => { document.getElementById("wa-input").value = l; });
-  setTimeout(()=>document.getElementById("wa-input").focus(),100);
-}
-
-function resetToken(){
-  localStorage.removeItem(LS_TOKEN);
-  document.getElementById("token-setup").style.display = "block";
-  document.getElementById("token-ready").style.display = "none";
-  document.getElementById("token-input").value = "";
-  document.getElementById("save-status").textContent = "";
-}
-
 async function saveLink(){
   const val = document.getElementById("wa-input").value.trim();
-  const tok = localStorage.getItem(LS_TOKEN);
   if(!val.startsWith("http")){
     document.getElementById("save-status").textContent = "❌ Please enter a valid link";
-    document.getElementById("save-status").style.color = "#ff4444";
-    return;
-  }
-  if(!tok){
-    document.getElementById("save-status").textContent = "❌ No token — please reset and add token first";
     document.getElementById("save-status").style.color = "#ff4444";
     return;
   }
   document.getElementById("save-status").textContent = "Updating for all devices...";
   document.getElementById("save-status").style.color = "#aaa";
   try {
-    const shaRes = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${DATA_FILE}`,{
-      headers:{"Authorization":"token "+tok,"Accept":"application/vnd.github.v3+json"}
+    const res = await fetch(`${SB_URL}/rest/v1/config?key=eq.wa_link`,{
+      method:"PATCH",
+      headers:{"apikey":SB_KEY,"Authorization":"Bearer "+SB_KEY,"Content-Type":"application/json","Prefer":"return=minimal"},
+      body: JSON.stringify({value:val, updated_at: new Date().toISOString()})
     });
-    const shaData = await shaRes.json();
-    const sha = shaData.sha;
-    const content = btoa(JSON.stringify({waLink:val})+"\n");
-    const putRes = await fetch(`https://api.github.com/repos/${GH_REPO}/contents/${DATA_FILE}`,{
-      method:"PUT",
-      headers:{"Authorization":"token "+tok,"Accept":"application/vnd.github.v3+json","Content-Type":"application/json"},
-      body: JSON.stringify({message:"Update WhatsApp link",content,sha})
-    });
-    if(putRes.ok){
-      localStorage.setItem(LS_LINK, val);
+    if(res.ok || res.status===204){
       setButtons(val);
       document.getElementById("save-status").textContent = "✓ Updated for ALL devices!";
       document.getElementById("save-status").style.color = "#22C55E";
@@ -795,7 +748,7 @@ async function saveLink(){
       return;
     }
   } catch(e){}
-  document.getElementById("save-status").textContent = "❌ Cloud save failed — check your token";
+  document.getElementById("save-status").textContent = "❌ Cloud save failed — try again";
   document.getElementById("save-status").style.color = "#ff4444";
 }
 
